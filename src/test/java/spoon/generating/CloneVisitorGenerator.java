@@ -30,6 +30,7 @@ import spoon.reflect.code.CtIf;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.code.CtLocalVariable;
 import spoon.reflect.code.CtReturn;
+import spoon.reflect.code.CtStatement;
 import spoon.reflect.code.CtThrow;
 import spoon.reflect.code.CtTypeAccess;
 import spoon.reflect.code.CtVariableAccess;
@@ -105,6 +106,7 @@ public class CloneVisitorGenerator extends AbstractManualProcessor {
 				final CtVariableAccess localVarRead = factory.Code().createVariableRead(localCloningElement.getReference(), false);
 
 				// Changes body of the cloned method.
+				List<CtStatement> newStatements = new ArrayList<>();
 				for (int i = 1; i < clone.getBody().getStatements().size() - 1; i++) {
 					List<CtExpression> invArgs = ((CtInvocation) clone.getBody().getStatement(i)).getArguments();
 					if (invArgs.size() <= 1) {
@@ -115,14 +117,13 @@ public class CloneVisitorGenerator extends AbstractManualProcessor {
 						clone.getBody().getStatement(i--).delete();
 						continue;
 					}
-					clone.getBody().getStatement(i) //
-							.replace(createSetter((CtInvocation) clone.getBody().getStatement(i), localVarRead));
+					// CtInvocation<?> scanInvocation = (CtInvocation<?>) clone.getBody().getStatement(i).clone();
+					// scanInvocation.getArguments().remove(0);
+					// newStatements.add(scanInvocation);
+					newStatements.add(createSetter(clone.getBody().getStatement(i), localVarRead));
 				}
 
-				// Delete enter and exit methods.
-				clone.getBody().getStatement(0).delete();
-				clone.getBody().getStatement(clone.getBody().getStatements().size() - 1).delete();
-
+				clone.getBody().setStatements(newStatements);
 				clone.getBody().insertBegin(createCloneBuilderCopyInvocation(elementVarRead, localVarRead)); // call to copy
 				clone.getBody().insertBegin(localCloningElement); // declaration of local variable
 				clone.getBody().insertEnd(createTailorerScanInvocation(elementVarRead, localVarRead)); // call to tailor
@@ -148,9 +149,9 @@ public class CloneVisitorGenerator extends AbstractManualProcessor {
 				final CtInvocation<?> getter = (CtInvocation<?>) scanInvocation.getArguments().get(1);
 				final String getterName = getter.getExecutable().getSimpleName();
 				final CtExecutableReference<Object> setterRef = factory.Executable().createReference("void CtElement#set" + getterName.substring(3, getterName.length()) + "()");
-				final CtExecutableReference<Object> cloneRef = factory.Executable().createReference("CtElement spoon.support.visitor.equals.CloneHelper#clone()");
+				final CtExecutableReference<Object> cloneRef = factory.Executable().createReference("CtElement spoon.support.visitor.equals.CloneVisitor#clone()");
 				final CtInvocation<Object> cloneInv = factory.Code().createInvocation(null, cloneRef, getter);
-				cloneInv.setTarget(cloneHelperFieldAccess);
+				// cloneInv.setTarget(cloneHelperFieldAccess);
 				return factory.Code().createInvocation(elementVarRead, setterRef, cloneInv);
 			}
 
