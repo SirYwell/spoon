@@ -413,6 +413,7 @@ public class SpoonArchitectureEnforcerTest {
 		officialPackages.add("spoon.support.template");
 		officialPackages.add("spoon.support.util");
 		officialPackages.add("spoon.support.util.internal");
+		officialPackages.add("spoon.support.util.internal.collection");
 		officialPackages.add("spoon.support.visitor.clone");
 		officialPackages.add("spoon.support.visitor.equals");
 		officialPackages.add("spoon.support.visitor.java.internal");
@@ -478,7 +479,7 @@ public class SpoonArchitectureEnforcerTest {
 		// only look at private methods
 		methods.removeIf(v -> !v.isPrivate());
 		// remove methods for serialization gods
-		methods.removeIf(v -> v.getSimpleName().matches("(readObject)|(readResolve)"));
+		methods.removeIf(v -> v.getSimpleName().matches("(readObject)|(readResolve)|(writeObject)"));
 		// some CtInvocation have no declaration in model
 		List<CtInvocation<?>> methodInvocations =
 				model.getElements(new TypeFilter<>(CtInvocation.class));

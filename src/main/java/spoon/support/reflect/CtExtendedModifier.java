@@ -25,13 +25,46 @@ public class CtExtendedModifier implements SourcePositionHolder, Serializable {
 	private ModifierKind kind;
 	private SourcePosition position;
 
+	/**
+	 * Creates a new extended modifier, marked as not implicit.
+	 *
+	 * @param kind the kind of this extended modifier.
+	 * @deprecated use {@link #explicit(ModifierKind)} instead.
+	 */
+	@Deprecated
 	public CtExtendedModifier(ModifierKind kind) {
 		this.kind = kind;
 	}
 
+	/**
+	 * Creates a new extended modifier.
+	 *
+	 * @param kind the kind of this extended modifier.
+	 * @param implicit whether this modifier is implicit or not.
+	 */
 	public CtExtendedModifier(ModifierKind kind, boolean implicit) {
 		this(kind);
 		this.implicit = implicit;
+	}
+
+	/**
+	 * Creates a new implicit extended modifier.
+	 *
+	 * @param kind the kind of the created extended modifier.
+	 * @return a new modifier, with the given kind and marked as implicit.
+	 */
+	public static CtExtendedModifier implicit(ModifierKind kind) {
+		return new CtExtendedModifier(kind, true);
+	}
+
+	/**
+	 * Creates a new explicit extended modifier.
+	 *
+	 * @param kind the kind of the created extended modifier.
+	 * @return a new modifier, with the given kind and marked as explicit.
+	 */
+	public static CtExtendedModifier explicit(ModifierKind kind) {
+		return new CtExtendedModifier(kind, false);
 	}
 
 	public boolean isImplicit() {
@@ -92,5 +125,13 @@ public class CtExtendedModifier implements SourcePositionHolder, Serializable {
 		} else {
 			return ElementSourceFragment.NO_SOURCE_FRAGMENT;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "CtExtendedModifier{" +
+				"kind=" + kind +
+				", implicit=" + implicit +
+				'}';
 	}
 }
