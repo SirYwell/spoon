@@ -179,6 +179,16 @@ public class CtConstructorImpl<T> extends CtExecutableImpl<T> implements CtConst
 		return (T) this;
 	}
 
+	@Override
+	public void addModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.addModifier(modifier);
+	}
+
+	@Override
+	public void removeModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.removeModifier(modifier);
+	}
+
 
 	@MetamodelPropertyField(role = CtRole.IS_SHADOW)
 	boolean isShadow;

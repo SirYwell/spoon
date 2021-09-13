@@ -206,16 +206,7 @@ public class CtCatchVariableImpl<T> extends CtCodeElementImpl implements CtCatch
 
 	@Override
 	public ModifierKind getVisibility() {
-		if (getModifiers().contains(ModifierKind.PUBLIC)) {
-			return ModifierKind.PUBLIC;
-		}
-		if (getModifiers().contains(ModifierKind.PROTECTED)) {
-			return ModifierKind.PROTECTED;
-		}
-		if (getModifiers().contains(ModifierKind.PRIVATE)) {
-			return ModifierKind.PRIVATE;
-		}
-		return null;
+		return this.modifierHandler.getVisibility();
 	}
 
 	@Override
@@ -227,6 +218,16 @@ public class CtCatchVariableImpl<T> extends CtCodeElementImpl implements CtCatch
 	public <C extends CtModifiable> C setExtendedModifiers(Set<CtExtendedModifier> extendedModifiers) {
 		this.modifierHandler.setExtendedModifiers(extendedModifiers);
 		return (C) this;
+	}
+
+	@Override
+	public void addModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.addModifier(modifier);
+	}
+
+	@Override
+	public void removeModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.removeModifier(modifier);
 	}
 
 	@Override

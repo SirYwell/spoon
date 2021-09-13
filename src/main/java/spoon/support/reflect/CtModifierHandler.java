@@ -87,14 +87,14 @@ public class CtModifierHandler implements Serializable {
 	public CtModifierHandler addModifier(CtExtendedModifier modifier) {
 		// TODO I'm tricking the modelchangelistener here
 		getFactory().getEnvironment().getModelChangeListener().onSetAdd(element, MODIFIER, this.modifierMap.values(), modifier.getKind());
-		modifierMap.add(modifier);
+		this.modifierMap.add(modifier);
 		return this;
 	}
 
 	public CtModifierHandler removeModifier(ModifierKind modifier) {
 		getFactory().getEnvironment().getModelChangeListener().onSetDelete(element, MODIFIER, modifierMap.values(), modifier);
 		// we want to remove implicit OR explicit modifier
-		modifierMap.remove(modifier);
+		this.modifierMap.remove(modifier);
 		return this;
 	}
 

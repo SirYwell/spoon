@@ -80,7 +80,32 @@ public interface CtModifiable extends CtElement {
 	 */
 	@PropertyGetter(role = EMODIFIER)
 	Set<CtExtendedModifier> getExtendedModifiers();
+
+	/**
+	 * Sets the modifiers of this modifiable element.
+	 * Previous modifiers are removed.
+	 *
+	 * @param extendedModifiers the new set of modifiers for this element.
+	 * @param <T> the type of this element.
+	 * @return this
+	 */
 	<T extends CtModifiable> T setExtendedModifiers(Set<CtExtendedModifier> extendedModifiers);
+
+	/**
+	 * Adds an extended modifier to this modifiable element.
+	 *
+	 * @param modifier the extended modifier to add.
+	 */
+	@PropertySetter(role = EMODIFIER)
+	void addModifier(CtExtendedModifier modifier);
+
+	/**
+	 * Removes an extended modifier to this modifiable element.
+	 *
+	 * @param modifier the extended modifier to remove.
+	 */
+	@PropertySetter(role = EMODIFIER)
+	void removeModifier(CtExtendedModifier modifier);
 
 	/**
 	 * Returns true if it contains a public modifier (see {@link #hasModifier(ModifierKind)})

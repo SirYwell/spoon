@@ -56,16 +56,7 @@ public class CtAnonymousExecutableImpl extends CtExecutableImpl<Void> implements
 
 	@Override
 	public ModifierKind getVisibility() {
-		if (getModifiers().contains(ModifierKind.PUBLIC)) {
-			return ModifierKind.PUBLIC;
-		}
-		if (getModifiers().contains(ModifierKind.PROTECTED)) {
-			return ModifierKind.PROTECTED;
-		}
-		if (getModifiers().contains(ModifierKind.PRIVATE)) {
-			return ModifierKind.PRIVATE;
-		}
-		return null;
+		return this.modifierHandler.getVisibility();
 	}
 
 	@Override
@@ -94,6 +85,16 @@ public class CtAnonymousExecutableImpl extends CtExecutableImpl<Void> implements
 	public <T extends CtModifiable> T setExtendedModifiers(Set<CtExtendedModifier> extendedModifiers) {
 		this.modifierHandler.setExtendedModifiers(extendedModifiers);
 		return (T) this;
+	}
+
+	@Override
+	public void addModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.addModifier(modifier);
+	}
+
+	@Override
+	public void removeModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.removeModifier(modifier);
 	}
 
 	@Override

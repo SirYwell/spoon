@@ -494,6 +494,16 @@ public abstract class CtTypeImpl<T> extends CtNamedElementImpl implements CtType
 	}
 
 	@Override
+	public void addModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.addModifier(modifier);
+	}
+
+	@Override
+	public void removeModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.removeModifier(modifier);
+	}
+
+	@Override
 	public boolean isPrimitive() {
 		return false;
 	}

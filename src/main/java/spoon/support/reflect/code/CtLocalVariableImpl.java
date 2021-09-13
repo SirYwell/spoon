@@ -158,16 +158,7 @@ public class CtLocalVariableImpl<T> extends CtStatementImpl implements CtLocalVa
 
 	@Override
 	public ModifierKind getVisibility() {
-		if (getModifiers().contains(ModifierKind.PUBLIC)) {
-			return ModifierKind.PUBLIC;
-		}
-		if (getModifiers().contains(ModifierKind.PROTECTED)) {
-			return ModifierKind.PROTECTED;
-		}
-		if (getModifiers().contains(ModifierKind.PRIVATE)) {
-			return ModifierKind.PRIVATE;
-		}
-		return null;
+		return this.modifierHandler.getVisibility();
 	}
 
 	@Override
@@ -180,6 +171,17 @@ public class CtLocalVariableImpl<T> extends CtStatementImpl implements CtLocalVa
 		this.modifierHandler.setExtendedModifiers(extendedModifiers);
 		return (T) this;
 	}
+
+	@Override
+	public void addModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.addModifier(modifier);
+	}
+
+	@Override
+	public void removeModifier(CtExtendedModifier modifier) {
+		this.modifierHandler.removeModifier(modifier);
+	}
+
 
 	@Override
 	@DerivedProperty
