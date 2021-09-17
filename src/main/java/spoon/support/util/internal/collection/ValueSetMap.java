@@ -6,12 +6,13 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * A map that exposes a value {@link Set} instead of just a {@link java.util.Collection}.
+ * A bijective map that exposes a value {@link Set} instead of just a {@link java.util.Collection}.
  *
  * The {@link #containsValue(Object)} call has the same performance characteristics as {@link #get(Object)}
  * with the overhead of the {@link #valueToKeyMapper()}.
  *
- * This map does not allow null keys or values.
+ * This map does not allow null keys or values (and therefore the {@link #values()} Set does not allow
+ * {@code null} values either).
  *
  * @param <K> the key type.
  * @param <V> the value type.
@@ -20,6 +21,7 @@ public interface ValueSetMap<K, V> extends Map<K, V> {
 
 	/**
 	 * Returns a function that maps values to keys.
+	 *
 	 * @return the function to map a value to a key.
 	 */
 	Function<? super V, ? extends K> valueToKeyMapper();

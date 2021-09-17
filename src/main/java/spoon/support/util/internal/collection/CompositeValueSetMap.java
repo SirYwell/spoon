@@ -9,6 +9,9 @@ import java.util.function.Function;
 /**
  * A bijective map that wraps another map and provides a {@link Set} view for the values.
  *
+ * This implementation is meant to work with wrapping thread-safe map implementations but does
+ * not have any own synchronization mechanisms.
+ *
  * @param <K> the key type.
  * @param <V> the value type.
  */
