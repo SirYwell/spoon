@@ -2,6 +2,8 @@ package spoon.support.util.internal.collection;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -86,5 +88,60 @@ public class CompositeValueSetMap<K, V> implements ValueSetMap<K, V> {
 	@Override
 	public Set<Entry<K, V>> entrySet() {
 		return underlying.entrySet();
+	}
+
+	@Override
+	public V getOrDefault(Object key, V defaultValue) {
+		return underlying.getOrDefault(key, defaultValue);
+	}
+
+	@Override
+	public void forEach(BiConsumer<? super K, ? super V> action) {
+		underlying.forEach(action);
+	}
+
+	@Override
+	public void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
+		underlying.replaceAll(function);
+	}
+
+	@Override
+	public V putIfAbsent(K key, V value) {
+		return underlying.putIfAbsent(key, value);
+	}
+
+	@Override
+	public boolean remove(Object key, Object value) {
+		return underlying.remove(key, value);
+	}
+
+	@Override
+	public boolean replace(K key, V oldValue, V newValue) {
+		return underlying.replace(key, oldValue, newValue);
+	}
+
+	@Override
+	public V replace(K key, V value) {
+		return underlying.replace(key, value);
+	}
+
+	@Override
+	public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+		return underlying.computeIfAbsent(key, mappingFunction);
+	}
+
+	@Override
+	public V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+		return underlying.computeIfPresent(key, remappingFunction);
+	}
+
+	@Override
+	public V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+		return underlying.compute(key, remappingFunction);
+	}
+
+	@Override
+	public V merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+		return underlying.merge(key, value, remappingFunction);
 	}
 }
