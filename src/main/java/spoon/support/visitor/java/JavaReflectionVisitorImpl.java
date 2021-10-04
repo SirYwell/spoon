@@ -21,6 +21,8 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+
 import spoon.SpoonException;
 import spoon.reflect.path.CtRole;
 import spoon.support.visitor.java.reflect.RtMethod;
@@ -510,13 +512,7 @@ class JavaReflectionVisitorImpl implements JavaReflectionVisitor {
 			// the record class is missing we cant create any shadow element for it.
 			return;
 		}
-		try {
-			for (TypeVariable<Class<T>> generic : clazz.getTypeParameters()) {
-					visitTypeParameter(generic);
-			}
-		} catch (NoClassDefFoundError ignore) {
-			// partial classpath
-		}
+		visitAllSafe(clazz.getTypeParameters(), this::visitTypeParameter);
 		try {
 			if (clazz.getGenericSuperclass() != null && clazz.getGenericSuperclass() != Object.class) {
 				visitTypeReference(CtRole.SUPER_TYPE, clazz.getGenericSuperclass());
@@ -524,63 +520,27 @@ class JavaReflectionVisitorImpl implements JavaReflectionVisitor {
 		} catch (NoClassDefFoundError ignore) {
 			// partial classpath
 		}
-		try {
-			for (Type anInterface : clazz.getGenericInterfaces()) {
-				visitTypeReference(CtRole.INTERFACE, anInterface);
-			}
-		} catch (NoClassDefFoundError ignore) {
-			// partial classpath
-		}
-		try {
-			for (Annotation annotation : clazz.getDeclaredAnnotations()) {
-				visitAnnotation(annotation);
-			}
-		} catch (NoClassDefFoundError ignore) {
-			// partial classpath
-		}
-		try {
-			for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
-				if (constructor.isSynthetic()) {
-					continue;
-				}
+		visitAllSafe(clazz.getGenericInterfaces(), anInterface -> {
+			visitTypeReference(CtRole.INTERFACE, anInterface);
+		});
+		visitAllSafe(clazz.getDeclaredAnnotations(), this::visitAnnotation);
+		visitAllSafe(clazz.getDeclaredConstructors(), constructor -> {
+			if (!constructor.isSynthetic()) {
 				visitConstructor(constructor);
 			}
-		} catch (NoClassDefFoundError ignore) {
-			// partial classpath
-		}
-		try {
-			for (RtMethod method : getDeclaredMethods(clazz)) {
-				if (method.getMethod().isSynthetic()) {
-					continue;
-				}
+		});
+		visitAllSafe(getDeclaredMethods(clazz), method -> {
+			if (!method.getMethod().isSynthetic()) {
 				visitMethod(method);
 			}
-		} catch (NoClassDefFoundError ignore) {
-			// partial classpath
-		}
-		try {
-			for (Field field : clazz.getDeclaredFields()) {
-				if (field.isSynthetic()) {
-					continue;
-				}
+		});
+		visitAllSafe(clazz.getDeclaredFields(), field -> {
+			if (!field.isSynthetic()) {
 				visitField(field);
 			}
-		} catch (NoClassDefFoundError ignore) {
-			// partial classpath
-		}
-		try {
-			for (Class<?> aClass : clazz.getDeclaredClasses()) {
-				visitType(aClass);
-			}
-		} catch (NoClassDefFoundError ignore) {
-			// partial classpath
-		}
-		for (AnnotatedElement element : MethodHandleUtils.getRecordComponents(clazz)) {
-			visitRecordComponent(element);
-		}
-
-
-
+		});
+		visitAllSafe(clazz.getDeclaredClasses(), this::visitType);
+		visitAllSafe(MethodHandleUtils.getRecordComponents(clazz), this::visitRecordComponent);
 	}
 
 
@@ -595,6 +555,26 @@ class JavaReflectionVisitorImpl implements JavaReflectionVisitor {
 	@Override
 	public void visitRecordComponent(AnnotatedElement recordComponent) {
 
+	}
+
+	private <T> void visitAllSafe(T[] elements, Consumer<T> action) {
+		for (T element : elements) {
+			visitSafe(element, action);
+		}
+	}
+
+	private <T> void visitAllSafe(Iterable<T> elements, Consumer<T> action) {
+		for (T element : elements) {
+			visitSafe(element, action);
+		}
+	}
+
+	private <T> void visitSafe(T element, Consumer<T> action) {
+		try {
+			action.accept(element);
+		} catch (NoClassDefFoundError ignore) {
+			// partial classpath
+		}
 	}
 
 }
