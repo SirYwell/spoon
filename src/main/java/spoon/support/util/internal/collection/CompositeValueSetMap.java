@@ -1,5 +1,6 @@
 package spoon.support.util.internal.collection;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -15,13 +16,18 @@ import java.util.function.Function;
  * @param <K> the key type.
  * @param <V> the value type.
  */
-public class CompositeValueSetMap<K, V> implements ValueSetMap<K, V> {
+public class CompositeValueSetMap<K, V> implements ValueSetMap<K, V>, Serializable {
+	private static final long serialVersionUID = 1L;
+
 	private final Class<V> valueType;
 	private final Function<? super V, ? extends K> toKeyMapper;
 	private final Map<K, V> underlying;
 	private final Set<V> values;
 
-	public CompositeValueSetMap(Class<V> valueType, Function<? super V, ? extends K> toKeyMapper, Map<K, V> underlying) {
+	public <F extends Function<? super V, ? extends K> & Serializable> CompositeValueSetMap(
+			Class<V> valueType,
+			F toKeyMapper, Map<K, V> underlying
+	) {
 		this.valueType = valueType;
 		this.toKeyMapper = toKeyMapper;
 		this.underlying = underlying;

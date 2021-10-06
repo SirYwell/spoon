@@ -1,10 +1,12 @@
 package spoon.support.util.internal.collection;
 
+import java.io.Serializable;
 import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Map;
 
-final class ValueSet<K, E> extends AbstractSet<E> {
+final class ValueSet<K, E> extends AbstractSet<E> implements Serializable {
+	private static final long serialVersionUID = 1L;
 
 	private final ValueSetMap<K, E> map;
 

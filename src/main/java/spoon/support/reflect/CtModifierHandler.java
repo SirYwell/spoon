@@ -23,15 +23,16 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import static spoon.reflect.path.CtRole.MODIFIER;
 
 public class CtModifierHandler implements Serializable {
-	private static final long serialVersionUID = 2L;
+	private static final long serialVersionUID = 1L;
 
-	private ValueSetMap<ModifierKind, CtExtendedModifier> modifierMap = new CompositeValueSetMap<>(
+	private final ValueSetMap<ModifierKind, CtExtendedModifier> modifierMap = new CompositeValueSetMap<>(
 			CtExtendedModifier.class,
-			CtExtendedModifier::getKind,
+			(Function<? super CtExtendedModifier, ? extends ModifierKind> & Serializable) CtExtendedModifier::getKind,
 			new EnumMap<>(ModifierKind.class));
 
 	private CtElement element;
@@ -207,19 +208,4 @@ public class CtModifierHandler implements Serializable {
 	}
 
 	// Custom serialisation is needed because serializing the map is even worse
-
-	@SuppressWarnings("unchecked")
-	private void readObject(ObjectInputStream aInputStream) throws ClassNotFoundException, IOException {
-		element = (CtElement) aInputStream.readObject();
-		modifierMap = new CompositeValueSetMap<>(
-				CtExtendedModifier.class,
-				CtExtendedModifier::getKind, new EnumMap<>(ModifierKind.class)
-		);
-		modifierMap.values().addAll((Collection<? extends CtExtendedModifier>) aInputStream.readObject());
-	}
-
-	private void writeObject(ObjectOutputStream aOutputStream) throws IOException {
-		aOutputStream.writeObject(element);
-		aOutputStream.writeObject(new HashSet<>(modifierMap.values()));
-	}
 }
