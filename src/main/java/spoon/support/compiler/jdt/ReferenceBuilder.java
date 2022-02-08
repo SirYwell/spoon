@@ -27,6 +27,7 @@ import org.eclipse.jdt.internal.compiler.ast.SingleTypeReference;
 import org.eclipse.jdt.internal.compiler.ast.TypeReference;
 import org.eclipse.jdt.internal.compiler.ast.Wildcard;
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
+import org.eclipse.jdt.internal.compiler.lookup.AnnotationBinding;
 import org.eclipse.jdt.internal.compiler.lookup.ArrayBinding;
 import org.eclipse.jdt.internal.compiler.lookup.BaseTypeBinding;
 import org.eclipse.jdt.internal.compiler.lookup.BinaryTypeBinding;
@@ -62,10 +63,12 @@ import org.eclipse.jdt.internal.compiler.lookup.VariableBinding;
 import org.eclipse.jdt.internal.compiler.lookup.VoidTypeBinding;
 import org.eclipse.jdt.internal.compiler.lookup.WildcardBinding;
 import spoon.reflect.code.CtLambda;
+import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtModule;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.ModifierKind;
+import spoon.reflect.factory.Factory;
 import spoon.reflect.factory.PackageFactory;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtCatchVariableReference;
@@ -1030,10 +1033,29 @@ public class ReferenceBuilder {
 	}
 
 	private CtTypeReference<?> getTypeReferenceFromArrayBinding(ArrayBinding binding, boolean resolveGeneric) {
-		CtArrayTypeReference<Object> ref = this.jdtTreeBuilder.getFactory().Core().createArrayTypeReference();
-		CtTypeReference<?> outermostRef = ref;
-		for (int i = 1; i < binding.dimensions(); i++) {
-			CtArrayTypeReference<Object> tmp = this.jdtTreeBuilder.getFactory().Core().createArrayTypeReference();
+		Factory factory = this.jdtTreeBuilder.getFactory();
+		CtArrayTypeReference<Object> ref = null;
+		CtTypeReference<?> outermostRef = null;
+		AnnotationBinding[] annotations = binding.getTypeAnnotations();
+		int annotationIndex = 0;
+		int annotationsLength = annotations.length;
+		for (int i = 0; i < binding.dimensions(); i++) {
+			CtArrayTypeReference<Object> tmp = factory.Core().createArrayTypeReference();
+			for (; annotationIndex < annotationsLength; annotationIndex++) {
+				AnnotationBinding annotation = annotations[annotationIndex];
+				if (annotation == null) {
+					annotationIndex++;
+					break; // reached null marker, no more annotations on this dimension
+				}
+				// TODO values????
+				CtAnnotation<?> ctAnnotation = factory.createAnnotation().setAnnotationType(getTypeReference(annotation.getAnnotationType()));
+				tmp.addAnnotation(ctAnnotation);
+			}
+			if (i == 0) {
+				outermostRef = tmp;
+				ref = tmp;
+				continue;
+			}
 			ref.setComponentType(tmp);
 			ref = tmp;
 		}

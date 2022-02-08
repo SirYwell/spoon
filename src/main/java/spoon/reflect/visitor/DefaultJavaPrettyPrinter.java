@@ -497,6 +497,13 @@ public class DefaultJavaPrettyPrinter implements CtVisitor, PrettyPrinter {
 			return;
 		}
 		scan(reference.getComponentType());
+		if (!reference.getAnnotations().isEmpty()) {
+			printer.writeSpace();
+		}
+		for (CtAnnotation<? extends Annotation> annotation : reference.getAnnotations()) {
+			scan(annotation);
+			printer.writeSpace();
+		}
 		if (!context.skipArray()) {
 			printer.writeSeparator("[").writeSeparator("]");
 		}

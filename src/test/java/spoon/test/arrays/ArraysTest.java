@@ -17,20 +17,27 @@
 package spoon.test.arrays;
 
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Array;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import spoon.Launcher;
+import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.code.CtLiteral;
 import spoon.reflect.code.CtNewArray;
+import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.filter.TypeFilter;
+import spoon.test.SpoonTestHelpers;
 import spoon.test.arrays.testclasses.VaragParam;
 import spoon.testing.utils.ModelUtils;
 
@@ -196,5 +203,22 @@ public class ArraysTest {
 		CtTypeReference<?> typeRef = param1.getType();
 		assertEquals("java.util.List<?>", typeRef.toString());
 		assertEquals(1, typeRef.getActualTypeArguments().size());
+	}
+
+	@Test
+	void testAnnotationsOnDimensions() {
+		CtModel model = SpoonTestHelpers.createModelFromString(
+				"@Target({ElementType.TYPE_USE})\n" +
+				"@Retention(RetentionPolicy.RUNTIME)\n" +
+				"@interface Nullable { String value(); }\n" +
+				"class A {\n" +
+				"\tprivate int @Nullable(\"a\") [] @Nullable(\"b\") [] field;\n" +
+				"\tprivate void parameter(int @Nullable [] param) { }\n" +
+				"\tprivate void parameter2(int [] param) { }\n" +
+				"\tprivate int method() @Nullable [] { return null; }\n" +
+				"}", 8);
+		CtClass<?> clazz = (CtClass<?>) model.getAllTypes().iterator().next();
+		System.out.println(clazz.toString());
+		int a = 3;
 	}
 }

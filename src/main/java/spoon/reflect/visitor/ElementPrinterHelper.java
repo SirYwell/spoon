@@ -16,6 +16,7 @@ import spoon.reflect.code.CtForEach;
 import spoon.reflect.code.CtIf;
 import spoon.reflect.code.CtStatement;
 import spoon.reflect.code.CtTypeAccess;
+import spoon.reflect.declaration.CtAnnotatedElementType;
 import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtCompilationUnit;
 import spoon.reflect.declaration.CtElement;
@@ -79,7 +80,11 @@ public class ElementPrinterHelper {
 			}
 
 			prettyPrinter.scan(annotation);
-			printer.writeln();
+			if (CtAnnotation.getAnnotatedElementTypeForCtElement(element) == CtAnnotatedElementType.TYPE) {
+				printer.writeSpace();
+			} else {
+				printer.writeln();
+			}
 		}
 	}
 

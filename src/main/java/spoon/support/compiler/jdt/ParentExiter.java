@@ -147,7 +147,9 @@ public class ParentExiter extends CtInheritanceScanner {
 		if (child instanceof CtAnnotation && this.jdtTreeBuilder.getContextBuilder().annotationValueName.isEmpty()) {
 			// we check if the current element can have the annotation attached
 			CtAnnotatedElementType annotatedElementType = CtAnnotation.getAnnotatedElementTypeForCtElement(e);
-			annotatedElementType = (e instanceof CtTypeParameter || e instanceof CtTypeParameterReference) ? CtAnnotatedElementType.TYPE_USE : annotatedElementType;
+			if (e instanceof CtTypeParameter || e instanceof CtTypeParameterReference || e instanceof CtTypeAccess) {
+				annotatedElementType = CtAnnotatedElementType.TYPE_USE;
+			}
 
 			// in case of noclasspath, we cannot be 100% sure, so we guess it must be attached...
 			if (this.jdtTreeBuilder.getFactory().getEnvironment().getNoClasspath() || (annotatedElementType != null && JDTTreeBuilderQuery.hasAnnotationWithType((Annotation) childJDT, annotatedElementType))) {
