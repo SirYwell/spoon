@@ -103,6 +103,7 @@ import spoon.test.annotation.testclasses.repeatandarrays.TagArrays;
 import spoon.test.annotation.testclasses.shadow.DumbKlass;
 import spoon.test.annotation.testclasses.spring.AliasFor;
 import spoon.test.annotation.testclasses.typeandfield.SimpleClass;
+import spoon.testing.utils.ModelTest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -1639,5 +1640,13 @@ public class AnnotationTest {
 				),
 				explicitAbstract.getExtendedModifiers()
 		);
+	}
+
+	@ModelTest("src/test/java/spoon/test/annotation/testclasses/AnnotationsInSeveralPlaces.java")
+	void justPrint(CtModel model, Launcher launcher) {
+		launcher.getEnvironment().setAutoImports(true);
+		for (CtType<?> type : model.getAllTypes()) {
+			System.out.println(type);
+		}
 	}
 }
