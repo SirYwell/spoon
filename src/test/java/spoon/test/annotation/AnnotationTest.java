@@ -1965,12 +1965,41 @@ public class AnnotationTest {
 		void testTypeAnnotationOnMethodReferenceType(Factory factory) {
 			// contract: type annotations on class instance creations are part of the model
 			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p17.MethodReference");
-			CtField<?> field = type.getFields().get(0);
-			CtTypeReference<?> reference = field.getDefaultExpression().getType().getActualTypeArguments().get(0);
-			assertThat(reference.getAnnotations().size(), equalTo(1));
-			assertThat(reference.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
-			assertThat(type.prettyprint(), containsRegexMatch("@.*TypeUseA\\W+String::hashCode"));
+			List<String> methodReferences = List.of("String::hashCode", "String::new", "int[]::new");
+			List<CtField<?>> fields = type.getFields();
+			for (int i = 0; i < fields.size(); i++) {
+				CtTypeReference<?> reference = fields.get(i).getDefaultExpression().getType().getActualTypeArguments().get(0);
+				assertThat(reference.getAnnotations().size(), equalTo(1));
+				assertThat(reference.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+				assertThat(type.prettyprint(), containsRegexMatch("@.*TypeUseA\\W+" + methodReferences.get(i)));
+			}
 		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "parray/"})
+		@Disabled // TODO annotation not in the model/dimension
+		void testTypeAnnotationOnArrayDimension(Factory factory) {
+			// contract: type annotations on array dimensions are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.parray.Dimension");
+			CtTypeReference<?> typeReference = type.getFields().get(0).getType();
+			assertThat(typeReference.getAnnotations().size(), equalTo(1));
+			assertThat(typeReference.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("int @.*TypeUseA\\W*\\[] a"));
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "pvarargs/"})
+		@Disabled // TODO annotation not in the model/dimension
+		void testTypeAnnotationOnArrayDimensionVarargs(Factory factory) {
+			// contract: type annotations on array dimensions are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.pvarargs.Varargs");
+			CtTypeReference<?> typeReference = type.getMethods().iterator().next().getParameters().get(0).getType();
+			assertThat(typeReference.getAnnotations().size(), equalTo(1));
+			assertThat(typeReference.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("int @.*TypeUseA\\W*\\.\\.\\. a"));
+		}
+
+		// TODO parametrized types, bounds of wildcard types
+
+		// TODO just on constructors?
 
 		private CtTypeReference<?> typeUseARef(Factory factory) {
 			return factory.Type().get("spoon.test.annotation.testclasses.typeannotations.TypeUseA").getReference();
