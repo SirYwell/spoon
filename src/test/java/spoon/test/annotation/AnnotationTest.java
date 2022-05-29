@@ -42,6 +42,7 @@ import spoon.processing.AbstractAnnotationProcessor;
 import spoon.processing.ProcessingManager;
 import spoon.reflect.CtModel;
 import spoon.reflect.annotations.PropertyGetter;
+import spoon.reflect.code.CtBinaryOperator;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtCatch;
 import spoon.reflect.code.CtCatchVariable;
@@ -55,6 +56,7 @@ import spoon.reflect.code.CtLocalVariable;
 import spoon.reflect.code.CtNewArray;
 import spoon.reflect.code.CtReturn;
 import spoon.reflect.code.CtStatement;
+import spoon.reflect.code.CtTypeAccess;
 import spoon.reflect.declaration.CtAnnotatedElementType;
 import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtAnnotationMethod;
@@ -74,6 +76,7 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.CtTypeParameter;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.factory.Factory;
+import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.filter.AbstractFilter;
@@ -1901,6 +1904,72 @@ public class AnnotationTest {
 			assertThat(methodReference.prettyprint(), containsRegexMatch("MethodReference::<@.*TypeUseA\\W+(java\\.lang\\.)?String>new"));
 			assertThat(methodReference.prettyprint(), containsRegexMatch("new N2\\(\\)::<@.*TypeUseA\\W+(java\\.lang\\.)?String>value"));
 			assertThat(methodReference.prettyprint(), containsRegexMatch("super::<@.*TypeUseA\\W+(java\\.lang\\.)?String>value"));
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, TYPE_USE_B_PATH, BASE_PATH + "p13/"})
+		void testTypeAnnotationOnClassInstanceCreation(Factory factory) {
+			// contract: type annotations on class instance creations are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p13.InstanceCreation");
+			for (CtField<?> field : type.getFields()) {
+				CtConstructorCall<?> call = (CtConstructorCall<?>) field.getDefaultExpression();
+				CtTypeReference<?> callType = call.getType();
+				assertThat(callType.getAnnotations().size(), equalTo(1));
+				CtTypeReference<?> annotationRef = field.getSimpleName().equals("a") ? typeUseARef(factory) : typeUseBRef(factory);
+				assertThat(callType.getAnnotations().get(0).getType(), equalTo(annotationRef));
+				assertThat(type.prettyprint(), containsRegexMatch("new @.*TypeUse" + field.getSimpleName().toUpperCase() + "\\W+InstanceCreation"));
+			}
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, TYPE_USE_B_PATH, BASE_PATH + "p14/"})
+		void testTypeAnnotationOnArrayCreation(Factory factory) {
+			// contract: type annotations on class instance creations are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p14.ArrayCreation");
+			for (CtField<?> field : type.getFields()) {
+				CtNewArray<?> call = (CtNewArray<?>) field.getDefaultExpression();
+				CtTypeReference<?> elementType = ((CtArrayTypeReference<?>) call.getType()).getComponentType();
+				assertThat(elementType.getAnnotations().size(), equalTo(1));
+				CtTypeReference<?> annotationRef = field.getSimpleName().equals("a") ? typeUseARef(factory) : typeUseBRef(factory);
+				assertThat(elementType.getAnnotations().get(0).getType(), equalTo(annotationRef));
+				assertThat(type.prettyprint(), containsRegexMatch("new @.*TypeUse" + field.getSimpleName().toUpperCase() + "\\W+int"));
+			}
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p15/"})
+		void testTypeAnnotationOnCast(Factory factory) {
+			// contract: type annotations on class instance creations are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p15.Cast");
+			CtField<?> field = type.getFields().get(0);
+			CtExpression<?> defaultExpression = field.getDefaultExpression();
+			assertThat(defaultExpression.getTypeCasts().size(), equalTo(1));
+			List<CtAnnotation<?>> annotations = defaultExpression.getTypeCasts().get(0).getAnnotations();
+			assertThat(annotations.size(), equalTo(1));
+			assertThat(annotations.get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("\\(@.*TypeUseA\\W+int\\)"));
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p16/"})
+		@Disabled // TODO annotation not in the model/type
+		void testTypeAnnotationOnInstanceOfType(Factory factory) {
+			// contract: type annotations on class instance creations are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p16.InstanceOf");
+			CtBinaryOperator<?> operator = type.getElements(new TypeFilter<>(CtBinaryOperator.class)).get(0);
+			CtTypeAccess<?> rightHand = (CtTypeAccess<?>) operator.getRightHandOperand();
+			CtTypeReference<Void> rightHandType = rightHand.getType();
+			assertThat(rightHandType.getAnnotations().size(), equalTo(1));
+			assertThat(rightHandType.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("instanceof @.*TypeUseA\\W+String"));
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p17/"})
+		@Disabled // TODO annotation not in the model/type
+		void testTypeAnnotationOnMethodReferenceType(Factory factory) {
+			// contract: type annotations on class instance creations are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p17.MethodReference");
+			CtField<?> field = type.getFields().get(0);
+			CtTypeReference<?> reference = field.getDefaultExpression().getType().getActualTypeArguments().get(0);
+			assertThat(reference.getAnnotations().size(), equalTo(1));
+			assertThat(reference.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("@.*TypeUseA\\W+String::hashCode"));
 		}
 
 		private CtTypeReference<?> typeUseARef(Factory factory) {
