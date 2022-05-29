@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import spoon.Launcher;
 import spoon.OutputType;
@@ -45,6 +48,8 @@ import spoon.reflect.code.CtCatchVariable;
 import spoon.reflect.code.CtConstructorCall;
 import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtFieldRead;
+import spoon.reflect.code.CtInvocation;
+import spoon.reflect.code.CtLambda;
 import spoon.reflect.code.CtLiteral;
 import spoon.reflect.code.CtLocalVariable;
 import spoon.reflect.code.CtNewArray;
@@ -69,12 +74,14 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.CtTypeParameter;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.factory.Factory;
+import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.filter.AbstractFilter;
 import spoon.reflect.visitor.filter.NamedElementFilter;
 import spoon.reflect.visitor.filter.TypeFilter;
 import spoon.support.QueueProcessingManager;
 import spoon.support.reflect.CtExtendedModifier;
+import spoon.support.reflect.code.CtConstructorCallImpl;
 import spoon.test.annotation.testclasses.AnnotArray;
 import spoon.test.annotation.testclasses.AnnotParamTypeEnum;
 import spoon.test.annotation.testclasses.AnnotParamTypes;
@@ -103,8 +110,10 @@ import spoon.test.annotation.testclasses.repeatandarrays.TagArrays;
 import spoon.test.annotation.testclasses.shadow.DumbKlass;
 import spoon.test.annotation.testclasses.spring.AliasFor;
 import spoon.test.annotation.testclasses.typeandfield.SimpleClass;
+import spoon.test.reference.testclasses.Stream;
 import spoon.testing.utils.ModelTest;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import static org.hamcrest.core.Is.is;
@@ -116,6 +125,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static spoon.test.SpoonTestHelpers.containsRegexMatch;
 import static spoon.testing.utils.ModelUtils.buildClass;
 import static spoon.testing.utils.ModelUtils.canBeBuilt;
 import static spoon.testing.utils.ModelUtils.createFactory;
@@ -1647,6 +1657,258 @@ public class AnnotationTest {
 		launcher.getEnvironment().setAutoImports(true);
 		for (CtType<?> type : model.getAllTypes()) {
 			System.out.println(type);
+		}
+	}
+
+	// TODO printing with modifiers
+	@Nested
+	@DisplayName("cover rules for type annotations in places mentioned in JLS 4.11")
+	class TypeUseAnnotationTest {
+		private static final String BASE_PATH = "src/test/java/spoon/test/annotation/testclasses/typeannotations/";
+		private static final String TYPE_USE_A_PATH = BASE_PATH + "TypeUseA.java";
+		private static final String TYPE_USE_B_PATH = BASE_PATH + "TypeUseB.java";
+
+		@ModelTest({TYPE_USE_A_PATH, TYPE_USE_B_PATH, BASE_PATH + "p01/"})
+		void testTypeAnnotationOnExtendsOrImplements(Factory factory) {
+			// contract: type annotations on extends and implements declarations of classes are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p01.ExtendsAndImplements");
+
+			// first, check the annotation of the extends type
+			assertThat(type.getSuperclass().getAnnotations().size(), equalTo(1));
+			assertThat(type.getSuperclass().getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("extends @.*TypeUseA\\W+Event"));
+
+			// then, check the annotation of the implements type
+			CtTypeReference<?> superInterface = type.getSuperInterfaces().iterator().next();
+			assertThat(superInterface.getAnnotations().size(), equalTo(1));
+			assertThat(superInterface.getAnnotations().get(0).getType(), equalTo(typeUseBRef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("implements @.*TypeUseB\\W+Serializable"));
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p02/"})
+		void testTypeAnnotationsOnInterfaceExtends(Factory factory) {
+			// contract: type annotations on extends declarations of interfaces are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p02.InterfaceExtends");
+
+			CtTypeReference<?> superInterface = type.getSuperInterfaces().iterator().next();
+			assertThat(superInterface.getAnnotations().size(), equalTo(1));
+			assertThat(superInterface.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("extends @.*TypeUseA\\W+Serializable"));
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p03/"})
+		void testTypeAnnotationOnReturnType(Factory factory) {
+			// contract: type annotations on return type declarations of methods are part of the model
+			for (String suffix : List.of("A", /*"C",*/ "I")) { // TODO print type annotations on type (after modifiers)
+				CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p03.OnReturnType" + suffix);
+
+				CtTypeReference<?> returnType = type.getMethods().iterator().next().getType();
+				assertThat(returnType.getAnnotations().size(), equalTo(1));
+				assertThat(returnType.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+				assertThat(type.prettyprint(), containsRegexMatch("@.*TypeUseA\\W+int value"));
+			}
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p04/"})
+		void testTypeAnnotationOnThrowsType(Factory factory) {
+			// contract: type annotations on throws declarations of methods are part of the model
+
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p04.OnThrowsTypeC");
+
+			// first, check the case for class methods
+			CtTypeReference<?> throwsType = type.getMethods().iterator().next().getThrownTypes().iterator().next();
+			assertThat(throwsType.getAnnotations().size(), equalTo(1));
+			assertThat(throwsType.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("throws @.*TypeUseA\\W+Exception"));
+
+			// then, check the case for constructors
+			throwsType = ((CtClass<?>) type).getConstructors().iterator().next().getThrownTypes().iterator().next();
+			assertThat(throwsType.getAnnotations().size(), equalTo(1));
+			assertThat(throwsType.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("throws @.*TypeUseA\\W+Exception"));
+
+			// then, check the case for interface methods
+			type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p04.OnThrowsTypeI");
+			throwsType = type.getMethods().iterator().next().getThrownTypes().iterator().next();
+			assertThat(throwsType.getAnnotations().size(), equalTo(1));
+			assertThat(throwsType.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("throws @.*TypeUseA\\W+Exception"));
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p05/"})
+		void testTypeAnnotationOnGenericExtends(Factory factory) {
+			// contract: type annotations on extends clauses of a type parameter declaration of a
+			// generic class, interface, method, or constructor are part of the model
+			CtClass<?> classType = (CtClass<?>) factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p05.GenericExtendsC");
+			CtType<?> interfaceType = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p05.GenericExtendsI");
+
+			// first, check the case for a generic class
+			CtTypeReference<?> bound = classType.getFormalCtTypeParameters().get(0).getSuperclass();
+			assertThat(bound.getAnnotations().size(), equalTo(1));
+			assertThat(bound.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(classType.prettyprint(), containsRegexMatch("<T extends @.*TypeUseA\\W+CharSequence>"));
+
+			// then, check the case for a generic interface
+			bound = interfaceType.getFormalCtTypeParameters().get(0).getSuperclass();
+			assertThat(bound.getAnnotations().size(), equalTo(1));
+			assertThat(bound.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(interfaceType.prettyprint(), containsRegexMatch("<T extends @.*TypeUseA\\W+CharSequence>"));
+
+			// then, check the case for generic methods in classes and interfaces and for constructors
+			List<String> typeNames = List.of("M", "M", "C");
+			List<String> bounds = List.of("Cloneable", "Cloneable", "Serializable");
+			// use var to capture CtExecutable & CtFormalTypeDeclarer
+			var executables = List.of(
+					classType.getMethods().iterator().next(),
+					interfaceType.getMethods().iterator().next(),
+					classType.getConstructors().iterator().next());
+			for (int j = 0; j < executables.size(); j++) {
+				// use var to capture CtExecutable & CtFormalTypeDeclarer
+				var executable = executables.get(j);
+				bound = executable.getFormalCtTypeParameters().get(0).getSuperclass();
+				assertThat(bound.getAnnotations().size(), equalTo(1));
+				assertThat(bound.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+				String genericRegex = "<" + typeNames.get(j) + " extends @.*TypeUseA\\W+" + bounds.get(j) + ">";
+				assertThat(executable.getDeclaringType().prettyprint(), containsRegexMatch(genericRegex));
+			}
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p06/"})
+		@Disabled // TODO annotations are not present on type, printed in the wrong spot
+		void testTypeAnnotationOnFieldDeclarations(Factory factory) {
+			// contract: type annotations on field declarations are part of the model
+			for (String suffix : List.of("C", "E", "I")) {
+				CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p06.FieldDecl" + suffix);
+				for (CtField<?> field : type.getFields()) {
+					assertThat(field.getType().getAnnotations().size(), equalTo(1));
+					assertThat(field.getType().getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+					assertThat(type.prettyprint(), containsRegexMatch("@.*TypeUseA\\W+int " + field.getSimpleName()));
+				}
+			}
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p07/"})
+		void testTypeAnnotationsOnFormalParameters(Factory factory) {
+			// contract: type annotations on formal parameters are part of the model
+			CtClass<?> type = (CtClass<?>) factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p07.FormalParameters");
+			List<CtParameter<?>> parameters = List.of(
+					type.getMethods().iterator().next().getParameters().get(0),
+					type.getConstructors().iterator().next().getParameters().get(0),
+					type.getElements(new TypeFilter<CtLambda<?>>(CtLambda.class)).get(0).getParameters().get(0)
+			);
+			for (CtParameter<?> parameter : parameters) {
+				assertThat(parameter.getType().getAnnotations().size(), equalTo(1));
+				assertThat(parameter.getType().getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+				assertThat(type.prettyprint(), containsRegexMatch("@.*TypeUseA\\W+int " + parameter.getSimpleName()));
+			}
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p08/"})
+		void testTypeAnnotationsOnReceiverParameter(Factory factory) {
+			// contract: type annotations on receiver parameters are part of the model
+			CtClass<?> type = (CtClass<?>) factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p08.ReceiverParameter");
+			CtParameter<?> parameter = type.getMethods().iterator().next().getParameters().get(0);
+			assertThat(parameter.getType().getAnnotations().size(), equalTo(1));
+			assertThat(parameter.getType().getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(type.prettyprint(), containsRegexMatch("@.*TypeUseA\\W+ReceiverParameter this"));
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p09/"})
+		void testTypeAnnotationsOnLocalVariableDeclarations(Factory factory) {
+			// contract: type annotations on local variable declarations are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p09.LocalVariables");
+			CtMethod<?> method = type.getMethods().iterator().next();
+			for (CtLocalVariable<?> localVariable : method.getElements(new TypeFilter<CtLocalVariable<?>>(CtLocalVariable.class))) {
+				assertThat(localVariable.getType().getAnnotations().size(), equalTo(1));
+				assertThat(localVariable.getType().getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+				assertThat(type.prettyprint(), containsRegexMatch("@.*TypeUseA\\W+ " + localVariable.getType().getSimpleName() + " " + localVariable.getSimpleName()));
+			}
+			// TODO patterns
+		}
+
+		@ModelTest({TYPE_USE_A_PATH, TYPE_USE_B_PATH, BASE_PATH + "p10/"})
+		void testTypeAnnotationsOnExceptionParameters(Factory factory) {
+			// contract: type annotations on exception parameters are part of the model
+			CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p10.ExceptionParameters");
+			CtMethod<?> multiCatchMethod = type.getMethodsByName("multiCatch").get(0);
+			// TODO figure out what happens with the first annotation
+			//  - is it part of the parameter? (but TYPE_USE)
+			//  - is it part of the first type or of both types?
+			CtCatch multiCatch = multiCatchMethod.getElements(new TypeFilter<>(CtCatch.class)).get(0);
+			CtCatchVariable<?> multiCatchParameter = multiCatch.getParameter();
+			assertThat(multiCatchParameter.getMultiTypes().size(), equalTo(2));
+			for (CtTypeReference<?> multiType : multiCatchParameter.getMultiTypes()) {
+
+			}
+			CtMethod<?> uniCatchMethod = type.getMethodsByName("uniCatch").get(0);
+			CtCatch uniCatch = uniCatchMethod.getElements(new TypeFilter<>(CtCatch.class)).get(0);
+			CtCatchVariable<?> uniCatchParameter = uniCatch.getParameter();
+			assertThat(uniCatchParameter.getAnnotations().size(), equalTo(1));
+			assertThat(uniCatchParameter.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			// TODO fix
+			//  assertThat(type.prettyprint(), containsRegexMatch("@TypeUseA\\W+Exception e"));
+		}
+
+		// TODO p11: record components
+
+		// expressions
+
+		@ModelTest({TYPE_USE_A_PATH, TYPE_USE_B_PATH, BASE_PATH + "p12/"})
+		void testTypeAnnotationInTypeArgumentList(Factory factory) {
+			// contract: type annotations in type argument lists are part of the model
+			// first, check for explicit constructor invocations
+			CtType<?> outer = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p12.ExplicitConstructorInvocation");
+			CtType<?> i1 = outer.getNestedType("I1");
+			CtType<?> i2 = outer.getNestedType("I2");
+			for (CtType<?> type : List.of(i1/*, i2*/)) { // TODO actual type arguments are wrong
+				for (CtExecutableReference<?> executable : type.getElements(new TypeFilter<CtExecutableReference<?>>(CtExecutableReference.class))) {
+					assertThat(executable.getActualTypeArguments().size(), equalTo(1));
+					CtTypeReference<?> typeReference = executable.getActualTypeArguments().get(0);
+					assertThat(typeReference.getAnnotations().size(), equalTo(1));
+					assertThat(typeReference.getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+					String explicit = executable.getType().getSimpleName().equals(executable.getParent(CtClass.class).getSimpleName()) ? "this" : "super";
+					assertThat(outer.prettyprint(), containsRegexMatch("<@.*TypeUseA\\W+String>" + explicit));
+				}
+			}
+
+			// then, check for class instance creations
+			CtType<?> classInstanceCreation = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p12.ClassInstanceCreation");
+			CtConstructorCall<?> call = classInstanceCreation.getElements(new TypeFilter<>(CtMethod.class)).get(0)
+					.getElements(new TypeFilter<CtConstructorCall<?>>(CtConstructorCall.class)).get(0);
+			assertThat(call.getActualTypeArguments().size(), equalTo(1));
+			assertThat(call.getActualTypeArguments().get(0).getAnnotations().size(), equalTo(1));
+			assertThat(call.getActualTypeArguments().get(0).getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(classInstanceCreation.prettyprint(), containsRegexMatch("new <@.*TypeUseA\\W+String>ClassInstanceCreation"));
+
+			// then, check for method invocations
+			CtType<?> methodInvocation = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p12.MethodInvocation");
+			CtInvocation<?> invocation = methodInvocation.getElements(new TypeFilter<>(CtMethod.class)).get(0)
+					.getElements(new TypeFilter<CtInvocation<?>>(CtInvocation.class)).get(0);
+			assertThat(invocation.getActualTypeArguments().size(), equalTo(1));
+			assertThat(invocation.getActualTypeArguments().get(0).getAnnotations().size(), equalTo(1));
+			assertThat(invocation.getActualTypeArguments().get(0).getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			assertThat(methodInvocation.prettyprint(), containsRegexMatch("this.<@.*TypeUseA\\W+T>m"));
+
+			//then, check for method references
+			CtType<?> methodReference = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p12.MethodReference");
+			for (CtField<?> field : methodReference.getFields()) {
+				CtExecutableReference<?> reference = field.getDefaultExpression().getElements(new TypeFilter<>(CtExecutableReference.class)).get(0);
+				assertThat(reference.getActualTypeArguments().size(), equalTo(1));
+				assertThat(reference.getActualTypeArguments().get(0).getAnnotations().size(), equalTo(1));
+				assertThat(reference.getActualTypeArguments().get(0).getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
+			}
+			// TODO figure out why String is fq here
+			assertThat(methodReference.prettyprint(), containsRegexMatch("MethodReference::<@.*TypeUseA\\W+(java\\.lang\\.)?String>new"));
+			assertThat(methodReference.prettyprint(), containsRegexMatch("new N2\\(\\)::<@.*TypeUseA\\W+(java\\.lang\\.)?String>value"));
+			assertThat(methodReference.prettyprint(), containsRegexMatch("super::<@.*TypeUseA\\W+(java\\.lang\\.)?String>value"));
+		}
+
+		private CtTypeReference<?> typeUseARef(Factory factory) {
+			return factory.Type().get("spoon.test.annotation.testclasses.typeannotations.TypeUseA").getReference();
+		}
+
+		private CtTypeReference<?> typeUseBRef(Factory factory) {
+			return factory.Type().get("spoon.test.annotation.testclasses.typeannotations.TypeUseB").getReference();
 		}
 	}
 }
