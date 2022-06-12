@@ -4,5 +4,5 @@ import spoon.test.annotation.testclasses.typeannotations.TypeUseA;
 
 import java.io.Serializable;
 
-public interface InterfaceExtends extends @TypeUseA Serializable {
+public interface InterfaceExtends extends @TypeUseA Cloneable {
 }

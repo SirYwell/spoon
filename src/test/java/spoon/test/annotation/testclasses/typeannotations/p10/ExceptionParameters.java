@@ -13,7 +13,7 @@ public class ExceptionParameters {
 
 	public void multiCatch() {
 		try {
-		} catch (@TypeUseA IllegalStateException | @TypeUseB IllegalArgumentException e) {
+		} catch (final @TypeUseA IllegalStateException | @TypeUseB IllegalArgumentException e) {
 		}
 	}
 }

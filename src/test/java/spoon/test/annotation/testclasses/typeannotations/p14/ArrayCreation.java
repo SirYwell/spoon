@@ -4,6 +4,6 @@ import spoon.test.annotation.testclasses.typeannotations.TypeUseA;
 import spoon.test.annotation.testclasses.typeannotations.TypeUseB;
 
 public class ArrayCreation {
-	static int[] a = new @TypeUseA int[0];
-	static int[] b = new @TypeUseB int[] {};
+	static String[] a = new @TypeUseA String[0];
+	static String[] b = new @TypeUseB String[] {};
 }

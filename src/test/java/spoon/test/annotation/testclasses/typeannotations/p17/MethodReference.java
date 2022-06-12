@@ -9,5 +9,5 @@ import java.util.function.ToIntFunction;
 public class MethodReference {
 	private ToIntFunction<String> a = @TypeUseA String::hashCode;
 	private Supplier<String> b = @TypeUseA String::new;
-	private IntFunction<int[]> c = @TypeUseA int[]::new;
+	private IntFunction<String[]> c = @TypeUseA String[]::new;
 }

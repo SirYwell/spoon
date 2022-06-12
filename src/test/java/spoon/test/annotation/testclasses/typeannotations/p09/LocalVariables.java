@@ -8,14 +8,13 @@ import java.util.List;
 
 public class LocalVariables {
 	void m() {
-		@TypeUseA int a;
-		for (@TypeUseA int b; ; ) {
+		final @TypeUseA String a;
+		for (final @TypeUseA String b; ; ) {
 			break;
 		}
-		for (@TypeUseA String s : List.<String>of()) { }
-		try (@TypeUseA OutputStream os = OutputStream.nullOutputStream()) {
+		for (final @TypeUseA String s : List.<String>of()) { }
+		try (final @TypeUseA OutputStream os = null) {
 		} catch (IOException e) {
-			throw new RuntimeException(e);
 		}
 	}
 }
