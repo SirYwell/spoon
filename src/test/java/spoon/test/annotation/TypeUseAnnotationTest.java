@@ -161,7 +161,6 @@ class TypeUseAnnotationTest {
 
 			@DisplayName("6. The type in a field declaration of a class or interface (§8.3, §9.3), including an enum constant (§8.9.1)")
 			@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p06/"})
-			@Disabled
 				// TODO annotations are not present on type, printed in the wrong spot
 			void testTypeAnnotationOnFieldDeclarations(Factory factory) {
 				// contract: type annotations on field declarations are part of the model
@@ -170,9 +169,14 @@ class TypeUseAnnotationTest {
 					for (CtField<?> field : type.getFields()) {
 						assertThat(field.getType().getAnnotations().size(), equalTo(1));
 						assertThat(field.getType().getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
-						assertThat(type.toString(), containsRegexMatch("java\\.lang\\.\\W*@.*TypeUseA\\W+String " + field.getSimpleName()));
+						if (suffix.equals("E")) {
+							assertThat(type.toString(), containsRegexMatch("\\W*@.*TypeUseA\\W+" + field.getSimpleName()));
+						} else {
+							assertThat(type.toString(), containsRegexMatch("java\\.lang\\.\\W*@.*TypeUseA\\W+String " + field.getSimpleName()));
+						}
 					}
 				}
+
 			}
 
 			@DisplayName("7. The type in a formal parameter declaration of a method, constructor, or lambda " +
@@ -189,7 +193,7 @@ class TypeUseAnnotationTest {
 				for (CtParameter<?> parameter : parameters) {
 					assertThat(parameter.getType().getAnnotations().size(), equalTo(1));
 					assertThat(parameter.getType().getAnnotations().get(0).getType(), equalTo(typeUseARef(factory)));
-					assertThat(type.toString(), containsRegexMatch("@.*TypeUseA\\W+int " + parameter.getSimpleName()));
+					assertThat(type.toString(), containsRegexMatch("java\\.lang\\.\\W*@.*TypeUseA\\W+String " + parameter.getSimpleName()));
 				}
 			}
 
@@ -221,7 +225,6 @@ class TypeUseAnnotationTest {
 
 			@DisplayName("10. A type in an exception parameter declaration (§14.20)")
 			@ModelTest({TYPE_USE_A_PATH, TYPE_USE_B_PATH, BASE_PATH + "p10/"})
-			@Disabled
 			void testTypeAnnotationsOnExceptionParameters(Factory factory) {
 				// contract: type annotations on exception parameters are part of the model
 				CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p10.ExceptionParameters");
@@ -357,7 +360,6 @@ class TypeUseAnnotationTest {
 
 			@DisplayName("16. The type that follows the instanceof type comparison operator (§15.20.2)")
 			@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p16/"})
-			@Disabled
 				// TODO annotation not in the model/type
 			void testTypeAnnotationOnInstanceOfType(Factory factory) {
 				// contract: type annotations on class instance creations are part of the model
@@ -373,7 +375,6 @@ class TypeUseAnnotationTest {
 			@DisplayName("17. In a method reference expression (§15.13), as the reference type to search for a member method " +
 					"or as the class type or array type to construct")
 			@ModelTest({TYPE_USE_A_PATH, BASE_PATH + "p17/"})
-			@Disabled
 				// TODO annotation not in the model/type
 			void testTypeAnnotationOnMethodReferenceType(Factory factory) {
 				// contract: type annotations on class instance creations are part of the model
