@@ -1606,7 +1606,16 @@ public class DefaultJavaPrettyPrinter implements CtVisitor, PrettyPrinter {
 				elementPrinterHelper.writeActualTypeArguments(ctConstructorCall);
 			}
 
-			scan(ctConstructorCall.getType());
+			if (ctConstructorCall instanceof CtNewClass) {
+				CtClass<?> anonymousClass = ((CtNewClass<T>) ctConstructorCall).getAnonymousClass();
+				if (!anonymousClass.getSuperInterfaces().isEmpty()) {
+					scan(anonymousClass.getSuperInterfaces().iterator().next());
+				} else {
+					scan(anonymousClass.getSuperclass());
+				}
+			} else {
+				scan(ctConstructorCall.getType());
+			}
 		}
 
 		elementPrinterHelper.printList(ctConstructorCall.getArguments(),

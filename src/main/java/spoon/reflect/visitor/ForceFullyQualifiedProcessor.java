@@ -54,10 +54,19 @@ public class ForceFullyQualifiedProcessor extends ImportAnalyzer<LexicalScope> {
 				//do not use FQ names for that
 				return;
 			}
+			if (isImplicitExtendsObject(reference, role)) {
+				// do not enforce "extends java.lang.Object"
+				return;
+			}
 			//force fully qualified name
 			reference.setImplicit(false);
 			reference.setSimplyQualified(false);
 		}
+	}
+
+	private boolean isImplicitExtendsObject(CtTypeReference<?> reference, CtRole role) {
+		// TODO compare with getFactory().Type().objectType() but without NPEs?
+		return role == CtRole.SUPER_TYPE && reference.getQualifiedName().equals("java.lang.Object");
 	}
 
 	protected boolean isTypeReferenceToEnclosingType(LexicalScope nameScope, CtTypeReference<?> reference) {

@@ -69,25 +69,25 @@ public class NewClassTest {
 	@Test
 	public void testNewClassWithObjectClass() {
 		final CtNewClass<?> newClass = newClasses.get(0);
-		assertType(Object.class, newClass);
 		assertIsConstructor(newClass.getExecutable());
 		assertHasParameters(0, newClass.getArguments());
 		assertIsAnonymous(newClass.getAnonymousClass());
 		assertSuperClass(Object.class, newClass.getAnonymousClass());
+		assertEquals(newClass.getAnonymousClass().getReference(), newClass.getType());
 
 		// contract: createNewClass() returns a default anonymous class
 		CtNewClass<?> klass =newClass.getFactory().createNewClass();
-		assertEquals("new java.lang.Object() {}", newClass.toString());
+		assertEquals("new Object() {}", newClass.toString());
 	}
 
 	@Test
 	public void testNewClassWithInterface() {
 		final CtNewClass<?> newClass = newClasses.get(1);
-		assertType(Foo.Bar.class, newClass);
 		assertIsConstructor(newClass.getExecutable());
 		assertHasParameters(0, newClass.getArguments());
 		assertIsAnonymous(newClass.getAnonymousClass());
 		assertSuperInterface(Foo.Bar.class, newClass.getAnonymousClass());
+		assertEquals(newClass.getAnonymousClass().getReference(), newClass.getType());
 
 		// contract: one can create an anonymous new class from an existing class
 		Factory factory = newClass.getFactory();
@@ -136,6 +136,9 @@ public class NewClassTest {
 		assertEquals("\">\"", newClass.getArguments().get(0).toString());
 		assertIsAnonymous(newClass.getAnonymousClass());
 		assertSuperClass(Bar.class, newClass.getAnonymousClass());
+		// contract: the type of an anonymous enum constant is the anonymous type
+		assertEquals(newClass.getType(), newClass.getAnonymousClass().getReference());
+		assertEquals(factory.Type().get(Bar.GREATER.getClass()).getReference(), newClass.getType());
 	}
 
 	private void assertSuperClass(Class<?> expected, CtClass<?> anonymousClass) {
@@ -144,7 +147,8 @@ public class NewClassTest {
 	}
 
 	private void assertSuperInterface(Class<?> expected, CtClass<?> anonymousClass) {
-		assertNull(anonymousClass.getSuperclass(), "There isn't super class if there is a super interface");
+		// https://docs.oracle.com/javase/specs/jls/se17/html/jls-15.html#jls-15.9.5
+		assertTrue(anonymousClass.getSuperclass().isImplicit(), "If a direct superinterface type is given, the direct superclass type is Object");
 		assertSame(expected, anonymousClass.getSuperInterfaces().toArray(new CtTypeReference[0])[0].getActualClass(), "There is a super interface if there isn't super class");
 	}
 
@@ -165,7 +169,7 @@ public class NewClassTest {
 	}
 
 	private void assertType(Class<?> typeExpected, CtNewClass<?> newClass) {
-		assertSame(typeExpected, newClass.getType().getActualClass(), "New class is typed by the class of the constructor");
+		assertSame(typeExpected, newClass.getType().getActualClass().getSuperclass(), "New class has the super class with the name of the constructor");
 	}
 
 	@Test

@@ -40,6 +40,7 @@ import spoon.reflect.code.CtConstructorCall;
 import spoon.reflect.code.CtExecutableReferenceExpression;
 import spoon.reflect.code.CtFieldRead;
 import spoon.reflect.code.CtInvocation;
+import spoon.reflect.code.CtNewClass;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
 import spoon.reflect.declaration.CtExecutable;
@@ -205,6 +206,9 @@ public class SpoonArchitectureEnforcerTest {
 		List<CtConstructorCall> treeSetWithoutComparators = spoon.getFactory().Package().getRootPackage().filterChildren(new AbstractFilter<CtConstructorCall>() {
 			@Override
 			public boolean matches(CtConstructorCall element) {
+				if (element instanceof CtNewClass) {
+					return false;
+				}
 				return element.getType().getActualClass().equals(TreeSet.class) && element.getArguments().isEmpty();
 			}
 		}).list();

@@ -10,7 +10,10 @@ package spoon.support.reflect.code;
 import spoon.reflect.annotations.MetamodelPropertyField;
 import spoon.reflect.code.CtNewClass;
 import spoon.reflect.declaration.CtClass;
+import spoon.reflect.declaration.CtTypedElement;
+import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.CtVisitor;
+import spoon.support.UnsettableProperty;
 
 import static spoon.reflect.path.CtRole.NESTED_TYPE;
 
@@ -43,5 +46,16 @@ public class CtNewClassImpl<T> extends CtConstructorCallImpl<T> implements CtNew
 	@Override
 	public CtNewClass<T> clone() {
 		return (CtNewClass<T>) super.clone();
+	}
+
+	@Override
+	public CtTypeReference<T> getType() {
+		return (CtTypeReference<T>) getAnonymousClass().getReference();
+	}
+
+	@Override
+	@UnsettableProperty
+	public <C extends CtTypedElement> C setType(CtTypeReference<T> type) {
+		return (C) this;
 	}
 }

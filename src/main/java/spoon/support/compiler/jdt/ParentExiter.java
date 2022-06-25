@@ -810,16 +810,6 @@ public class ParentExiter extends CtInheritanceScanner {
 	public <T> void visitCtNewClass(CtNewClass<T> newClass) {
 		if (child instanceof CtClass) {
 			newClass.setAnonymousClass((CtClass<?>) child);
-			final QualifiedAllocationExpression node = (QualifiedAllocationExpression) jdtTreeBuilder.getContextBuilder().stack.peek().node;
-			final ReferenceBinding[] referenceBindings = node.resolvedType == null ? null : node.resolvedType.superInterfaces();
-			if (referenceBindings != null && referenceBindings.length > 0) {
-				//the interface of anonymous class is not printed so it must have no position
-				//note: the interface is sometimes already assigned so call setSuperInterfaces to replace it
-				((CtClass<?>) child).setSuperInterfaces(Collections.singleton(cloneAsImplicit(newClass.getType())));
-			} else if (newClass.getType() != null) {
-				//the super class of anonymous class is not printed so it must have no position
-				((CtClass<?>) child).setSuperclass(cloneAsImplicit(newClass.getType()));
-			}
 			return;
 		}
 		super.visitCtNewClass(newClass);

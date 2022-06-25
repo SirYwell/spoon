@@ -454,6 +454,7 @@ public class ReferenceBuilder {
 			if (isIncorrectlyBoundExecutableInNoClasspath(ref, allocationExpression)) {
 				adjustExecutableAccordingToResolvedType(ref, allocationExpression);
 			}
+			return ref;
 		} else {
 			ref = jdtTreeBuilder.getFactory().Core().createExecutableReference();
 			ref.setSimpleName(CtExecutableReference.CONSTRUCTOR_NAME);

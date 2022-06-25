@@ -131,7 +131,7 @@ public class ElementPrinterHelper {
 	}
 
 	public void writeExtendsClause(CtType<?> type) {
-		if (type.getSuperclass() != null) {
+		if (type.getSuperclass() != null && !type.getSuperclass().isImplicit()) {
 			printer.writeSpace().writeKeyword("extends").writeSpace();
 			prettyPrinter.scan(type.getSuperclass());
 		}
@@ -141,8 +141,12 @@ public class ElementPrinterHelper {
 	public void writeImplementsClause(CtType<?> type) {
 		if (!type.getSuperInterfaces().isEmpty()) {
 			printList(type.getSuperInterfaces(), "implements",
-				false, null, false, true, ",", true, false, null,
-				ref -> prettyPrinter.scan(ref));
+					false, null, false, true, ",", true, false, null,
+					ref -> {
+						if (!ref.isImplicit()) {
+							prettyPrinter.scan(ref);
+						}
+					});
 		}
 	}
 

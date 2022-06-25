@@ -729,9 +729,18 @@ public class JDTTreeBuilderHelper {
 				type.addSuperInterface(superInterface);
 			}
 		}
+		if (typeDeclaration.binding != null && typeDeclaration.binding.superInterfaces != null) {
+			for (ReferenceBinding superInterface : typeDeclaration.binding.superInterfaces) {
+				type.addSuperInterface(jdtTreeBuilder.references.getTypeReference(superInterface).setImplicit(true));
+			}
+		}
 
-		if (type instanceof CtClass && typeDeclaration.superclass != null) {
-			((CtClass) type).setSuperclass(jdtTreeBuilder.references.buildTypeReference(typeDeclaration.superclass, typeDeclaration.scope));
+		if (type instanceof CtClass) {
+			if (typeDeclaration.superclass != null) {
+				type.setSuperclass(jdtTreeBuilder.references.buildTypeReference(typeDeclaration.superclass, typeDeclaration.scope));
+			} else if (typeDeclaration.binding != null && typeDeclaration.binding.superclass != null) {
+				type.setSuperclass(jdtTreeBuilder.references.getTypeReference(typeDeclaration.binding.superclass).setImplicit(true));
+			}
 		}
 		if ((type instanceof CtClass || type instanceof CtInterface)
 				&& typeDeclaration.binding != null

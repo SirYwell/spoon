@@ -10,10 +10,12 @@ package spoon.reflect.code;
 import spoon.reflect.annotations.PropertyGetter;
 import spoon.reflect.annotations.PropertySetter;
 import spoon.reflect.declaration.CtClass;
+import spoon.reflect.declaration.CtTypedElement;
 import spoon.reflect.reference.CtActualTypeContainer;
 import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.support.DerivedProperty;
+import spoon.support.UnsettableProperty;
 
 import java.util.List;
 
@@ -76,6 +78,10 @@ public interface CtNewClass<T> extends CtConstructorCall<T> {
 	 */
 	@PropertySetter(role = NESTED_TYPE)
 	<N extends CtNewClass> N setAnonymousClass(CtClass<?> anonymousClass);
+
+	@Override
+	@UnsettableProperty
+	<C extends CtTypedElement> C setType(CtTypeReference<T> type);
 
 	@Override
 	CtNewClass<T> clone();
