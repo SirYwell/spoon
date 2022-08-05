@@ -229,14 +229,14 @@ class TypeUseAnnotationTest {
 				// contract: type annotations on exception parameters are part of the model
 				CtType<?> type = factory.Type().get("spoon.test.annotation.testclasses.typeannotations.p10.ExceptionParameters");
 				CtMethod<?> multiCatchMethod = type.getMethodsByName("multiCatch").get(0);
-				// TODO figure out what happens with the first annotation
-				//  - is it part of the parameter? (but TYPE_USE)
-				//  - is it part of the first type or of both types?
 				CtCatch multiCatch = multiCatchMethod.getElements(new TypeFilter<>(CtCatch.class)).get(0);
 				CtCatchVariable<?> multiCatchParameter = multiCatch.getParameter();
 				assertThat(multiCatchParameter.getMultiTypes().size(), equalTo(2));
 				for (CtTypeReference<?> multiType : multiCatchParameter.getMultiTypes()) {
-
+					assertThat(multiType.getAnnotations().size(), equalTo(1));
+					// @TypeUseA IllegalStateException | @TypeUseB IllegalArgumentException
+					CtTypeReference<?> ref = multiType.getSimpleName().contains("State") ? typeUseARef(factory) : typeUseBRef(factory);
+					assertThat(multiType.getAnnotations().get(0).getType(), equalTo(ref));
 				}
 				CtMethod<?> uniCatchMethod = type.getMethodsByName("uniCatch").get(0);
 				CtCatch uniCatch = uniCatchMethod.getElements(new TypeFilter<>(CtCatch.class)).get(0);
