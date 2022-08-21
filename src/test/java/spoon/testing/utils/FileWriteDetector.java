@@ -58,7 +58,7 @@ public class FileWriteDetector implements BeforeEachCallback, AfterEachCallback 
 
 		Path tempFile = context.getStore(NAMESPACE).remove(Path.class, Path.class);
 		try (Recording recording = context.getStore(NAMESPACE).remove(Recording.class, Recording.class)) {
-			// close
+			recording.stop();
 		}
 		List<Path> accepted = new ArrayList<>();
 		try (RecordingFile recordingFile = new RecordingFile(tempFile)) {
