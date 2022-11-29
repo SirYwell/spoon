@@ -126,8 +126,10 @@ import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -392,9 +394,62 @@ public class FactoryImpl implements Factory, Serializable {
 	// Deduplication
 	// See http://shipilev.net/talks/joker-Oct2014-string-catechism.pdf
 
-	private static class Dedup {
-		Map<String, String> cache = new HashMap<>();
-		Random random = ThreadLocalRandom.current();
+	private interface DedupStrategy {
+		// Puts the symbol into cache with 20% probability
+		int PROBABILITY = (int) (Integer.MIN_VALUE + (0.2 * (1L << 32)));
+
+		/**
+		 * Returns either the {@code symbol} object or a {@link String} equal to the {@code symbol} value.
+		 *
+		 * @param symbol the string to deduplicate.
+		 * @return a string representing the same value.
+		 */
+		String dedup(String symbol);
+	}
+
+	private static class NoOpDedupStrategy implements DedupStrategy {
+		@Override
+		public String dedup(String symbol) {
+			return symbol;
+		}
+	}
+
+	private static class ConcurrentMapDedupStrategy implements DedupStrategy {
+		private final Map<String, String> cache = new ConcurrentHashMap<>();
+		@Override
+		public String dedup(String symbol) {
+			return Objects.requireNonNullElse(cache.computeIfAbsent(symbol, k -> {
+				if (ThreadLocalRandom.current().nextInt() < PROBABILITY) {
+					return k;
+				} else {
+					return null;
+				}
+			}), symbol);
+		}
+	}
+
+	private static class ThreadLocalDedupStrategy implements DedupStrategy {
+		@Override
+		public String dedup(String symbol) {
+			Dedup dedup = threadLocalDedup.get();
+			Map<String, String> cache = dedup.cache;
+			String cached;
+			if ((cached = cache.get(symbol)) != null) {
+				return cached;
+			} else {
+				if (dedup.random.nextInt() < PROBABILITY) {
+					cache.put(symbol, symbol);
+				}
+				return symbol;
+			}
+		}
+
+		private static class Dedup {
+			Map<String, String> cache = new HashMap<>();
+			Random random = ThreadLocalRandom.current();
+		}
+
+		private final ThreadLocal<Dedup> threadLocalDedup = ThreadLocal.withInitial(Dedup::new);
 	}
 
 	/**
@@ -402,33 +457,32 @@ public class FactoryImpl implements Factory, Serializable {
 	 * targeted to each Spoon Launching, that could differ a lot by
 	 * frequently used symbols.
 	 */
-	private transient ThreadLocal<Dedup> threadLocalDedup = ThreadLocal.withInitial(Dedup::new);
+	private transient DedupStrategy dedupStrategy = chooseStrategy();
+
+	private static DedupStrategy chooseStrategy() {
+		String dedupProperty = System.getProperty("spoon.dedup", "concurrent");
+		switch (dedupProperty) {
+			case "threadlocal": return new ThreadLocalDedupStrategy();
+			case "none": return new NoOpDedupStrategy();
+			case "concurrent": // fallthrough
+			default:
+				return new ConcurrentMapDedupStrategy();
+
+		}
+	}
 
 	/**
-	 * Returns a String equal to the given symbol. Performs probablilistic
-	 * deduplication.
+	 * Returns a String equal to the given symbol.
 	 */
 	public String dedup(String symbol) {
-		Dedup dedup = threadLocalDedup.get();
-		Map<String, String> cache = dedup.cache;
-		String cached;
-		if ((cached = cache.get(symbol)) != null) {
-			return cached;
-		} else {
-			// Puts the symbol into cache with 20% probability
-			int prob = (int) (Integer.MIN_VALUE + (0.2 * (1L << 32)));
-			if (dedup.random.nextInt() < prob) {
-				cache.put(symbol, symbol);
-			}
-			return symbol;
-		}
+		return this.dedupStrategy.dedup(symbol);
 	}
 
 	/**
 	 * Needed to restore state of transient fields during reading from stream
 	 */
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-		threadLocalDedup = ThreadLocal.withInitial(Dedup::new);
+		dedupStrategy = chooseStrategy();
 		in.defaultReadObject();
 	}
 
