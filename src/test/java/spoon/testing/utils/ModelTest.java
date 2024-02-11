@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 @ExtendWith(ModelTestParameterResolver.class)
+@ExtendWith(FileWriteDetector.class)
 @Test
 public @interface ModelTest {
 
