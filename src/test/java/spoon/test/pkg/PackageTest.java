@@ -55,6 +55,7 @@ import spoon.test.annotation.testclasses.GlobalAnnotation;
 import spoon.test.pkg.name.PackageTestClass;
 import spoon.test.pkg.processors.ElementProcessor;
 import spoon.test.pkg.testclasses.Foo;
+import spoon.testing.utils.FileWriteDetector;
 import spoon.testing.utils.ModelTest;
 import spoon.testing.utils.ModelUtils;
 
@@ -264,6 +265,7 @@ public class PackageTest {
 	}
 
 	@ModelTest(value = "./src/test/java/spoon/test/pkg/testclasses/Foo.java", autoImport = true)
+	@FileWriteDetector.AllowedPath("**")
 	public void testAddAnnotationToPackage(Launcher launcher, Factory factory) throws Exception {
 		// contract: Created package-info should used imports in auto-import
 		File outputDir = new File("./target/spoon-packageinfo");
